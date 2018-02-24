@@ -7,6 +7,9 @@ let statusPanel = new tools();
  * 测试方法
  */
 
+var moduleOffsetTop = 200; // 模块距离顶部距离 TODO： 需要组件配置
+var timeoutId = null;
+
 // scroll direction为window系统操作鼠标滑轮的滚动方向 或者拖动滚动条的方向
 // 而不是mac触摸板 或者手机屏幕手指滑动的方向
 // Number of items to instantiate beyond current view in the scroll direction.
@@ -82,21 +85,22 @@ let InfiniteScroller = function(scroller, source, config) {
   this.items_ = []; // 所有数据列表
   this.loadedItems_ = 0;
   this.requestInProgress_ = false;
-  this.scroller_.addEventListener('scroll', this.onScroll_.bind(this));
+  // this.scroller_.addEventListener('scroll', this.onScroll_.bind(this));
+  window.addEventListener('scroll', this.onScroll_.bind(this));
   window.addEventListener('resize', this.onResize_.bind(this));
 
   // Create an element to force the scroller to allow scrolling to a certain
   // point.
-  this.scrollRunway_ = document.createElement('div');
-  // Internet explorer seems to require some text in this div in order to
-  // ensure that it can be scrolled to.
-  this.scrollRunway_.textContent = ' ';
+  // this.scrollRunway_ = document.createElement('div');
+  // // Internet explorer seems to require some text in this div in order to
+  // // ensure that it can be scrolled to.
+  // this.scrollRunway_.textContent = ' ';
   this.scrollRunwayEnd_ = 0;
-  this.scrollRunway_.style.position = 'absolute';
-  this.scrollRunway_.style.height = '1px';
-  this.scrollRunway_.style.width = '1px';
-  this.scrollRunway_.style.transition = 'transform 0.2s';
-  this.scroller_.appendChild(this.scrollRunway_);
+  // this.scrollRunway_.style.position = 'absolute';
+  // this.scrollRunway_.style.height = '1px';
+  // this.scrollRunway_.style.width = '1px';
+  // this.scrollRunway_.style.transition = 'transform 0.2s';
+  // this.scroller_.appendChild(this.scrollRunway_);
   this.onResize_();
 }
 
@@ -133,9 +137,16 @@ InfiniteScroller.prototype = {
    * content.
    */
   onScroll_: function() {
-    var delta = this.scroller_.scrollTop - this.anchorScrollTop;
+    var moduleScrollTop = window.scrollY - moduleOffsetTop;
+    if (moduleScrollTop < 0) {
+      moduleScrollTop = 0;
+    }
+    // console.log(moduleScrollTop);
+    var delta = moduleScrollTop - this.anchorScrollTop;
+    // var delta = this.scroller_.scrollTop - this.anchorScrollTop;
     // Special case, if we get to very top, always scroll to top.
-    if (this.scroller_.scrollTop == 0) {
+    // if (this.scroller_.scrollTop == 0) {
+    if (moduleScrollTop == 0) {
       this.anchorItem = {
         index: 0,
         offset: 0
@@ -143,12 +154,14 @@ InfiniteScroller.prototype = {
     } else {
       this.anchorItem = this.calculateAnchoredItem(this.anchorItem, delta);
     }
-    this.anchorScrollTop = this.scroller_.scrollTop;
-    var lastScreenItem = this.calculateAnchoredItem(this.anchorItem, this.scroller_.offsetHeight);
+    this.anchorScrollTop = moduleScrollTop;
+    // this.anchorScrollTop = this.scroller_.scrollTop;
+    var lastScreenItem = this.calculateAnchoredItem(this.anchorItem, 800);
+    // var lastScreenItem = this.calculateAnchoredItem(this.anchorItem, this.scroller_.offsetHeight);
     // console.log(this.anchorItem, lastScreenItem, this.anchorItem.index - RUNWAY_ITEMS_OPPOSITE, lastScreenItem.index + RUNWAY_ITEMS);
     this.showCB(this.anchorItem.index, lastScreenItem.index);
     statusPanel.addItem('First_of_this_page', this.anchorItem.index);
-
+    
     if (delta < 0) {
       // 向上滚动 ⬆︎  runway代表滚动方向 当前可视区元素第20个 则需从序号 20-RUNWAY_ITEMS 处开始补充
       //  RUNWAY_ITEMS 底部不可视区补充元素 RUNWAY_ITEMS_OPPOSITE 顶部不可视区补充元素
@@ -205,7 +218,6 @@ InfiniteScroller.prototype = {
   fill: function(start, end) {
     this.firstAttachedItem_ = Math.max(0, start);
     this.lastAttachedItem_ = end;
-    console.log(this.firstAttachedItem_, this.lastAttachedItem_);
     this.attachContent();
   },
 
@@ -259,7 +271,7 @@ InfiniteScroller.prototype = {
       }
 
       if (this.items_[i].node) {
-        if (this.items_[i].node.classList.contains(tombstoneClassName)) {
+        if (this.items_[i].node.classList.contains('tombstone')) {
           this.tombstones_.push(this.items_[i].node);
           this.tombstones_[this.tombstones_.length - 1].classList.add('invisible');
         } else {
@@ -289,7 +301,7 @@ InfiniteScroller.prototype = {
       }
       if (this.items_[i].node) {
         // if it's a tombstone but we have data, replace it.
-        if (this.items_[i].node.classList.contains(tombstoneClassName) &&
+        if (this.items_[i].node.classList.contains('tombstone') &&
           this.items_[i].data) {
           // TODO: Probably best to move items on top of tombstones and fade them in instead.
           // 隐藏占位墓碑元素 移动墓碑元素到可复用墓碑元素列表里
@@ -392,10 +404,15 @@ InfiniteScroller.prototype = {
       this.items_[i].top = curPos;
       curPos += this.items_[i].height || this.tombstoneSize_;
     }
+    this.scrollRunwayEnd_ = Math.max(this.scrollRunwayEnd_, curPos + SCROLL_RUNWAY);
+    // this.scrollRunway_.style.transform = 'translate(0, ' + this.scrollRunwayEnd_ + 'px)';
+    // this.scroller_.scrollTop = this.anchorScrollTop;
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      console.log('reset height');
+      this.scroller_.style.height = this.scrollRunwayEnd_ + 'px';
+    }, 200);
 
-    this.scrollRunwayEnd_ = Math.max(this.scrollRunwayEnd_, curPos + SCROLL_RUNWAY)
-    this.scrollRunway_.style.transform = 'translate(0, ' + this.scrollRunwayEnd_ + 'px)';
-    this.scroller_.scrollTop = this.anchorScrollTop;
 
     if (ANIMATION_DURATION_MS) {
       // TODO: Should probably use transition end, but there are a lot of animations we could be listening to.

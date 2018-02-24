@@ -1,11 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <meta name="author" content="Paul Lewis" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width">
   <title>Infinite Scroll</title>
   <link rel="stylesheet" href="https://mjs.sinaimg.cn/wap/project/homev8/8.2.83/homev8/homev8.min.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
@@ -25,11 +25,63 @@
       }
     }(window, document, Math);
   </script>
+  <style>
+    #templates {
+      display: none;
+    }
+
+    .news_list_row {
+      width: 100%;
+      background: rgb(248, 248, 248);
+    }
+
+    section.outer {
+      position: absolute;
+      width: 100%;
+      background-color: rgb(248, 248, 248);
+    }
+
+    .ls_f {
+      position: absolute;
+      width: 100%;
+      margin: 0;
+      padding: .22rem .2rem;
+      background: rgb(248, 248, 248);
+    }
+
+    .ls_f_b {
+      padding-left: 2.4rem;
+    }
+
+    .ls_f_e_l {
+      left: 2.4rem;
+    }
+
+    .m_video_box {
+      width: 100%;
+      margin: 0;
+      padding: 0 .2rem .2rem
+    }
+
+    #chat-timeline {
+      margin: 0;
+      padding: 0;
+      overflow: hidden !important;
+      /* -webkit-overflow-scrolling: touch; */
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      box-sizing: border-box;
+      contain: layout;
+      will-change: transform;
+    }
+  </style>
+  <!-- <link rel="stylesheet" href="../../css/index.css"> -->
 </head>
 
 <body>
   <div id="templates">
-    <a class="ls_f j_tombstone" data-id="{{id}}">
+    <a class="ls_f j_tombstone tombstone" data-id="{{id}}">
         <b class="ls_f_b">
           <em class="ls_f_e ls_f_e_l"></em>
         </b>
@@ -64,10 +116,17 @@
       <h2 class="m_video_tit cm_tit">跟着《爱乐之城》寻找洛杉矶10大浪漫地标跟着《爱乐之城》寻找洛杉矶10大浪漫地标</h2>
     </a>
   </div>
-  <ul id="container" class="page_main" style="background:#f8f8f8">
+  <div style="height:200px; background:#7fb86e"></div>
+
+  <ul id="chat-timeline" class="page_main" style="background:#f8f8f8; height:200vh;">
 
 
   </ul>
+  <!-- <script src="es6-promise.js"></script> -->
+  <!-- <script src="stats.min.js"></script> -->
+  <!-- <script src="scripts/infinite-scroll.js"></script> -->
+  <!-- <script src="scripts/messages.js"></script> -->
+
 </body>
 
 </html>
