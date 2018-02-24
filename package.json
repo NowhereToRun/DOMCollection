@@ -1,0 +1,24 @@
+{
+  "name": "@mfelibs/base-component-infiniteScroll",
+  "version": "0.0.1",
+  "description": "dom回收+无限滚动",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "scripts": {
+    "dev": "marax dev",
+    "build": "marax lib",
+    "build:demo": "marax build",
+    "postpublish": "node ./node_modules/webpack-marauder/hook/postpublish.js"
+  },
+  "devDependencies": {
+    "@mfelibs/base-utils": "^1.5.3",
+    "webpack-marauder": "^1.6.2"
+  },
+  "engines": {
+    "node": ">= 8.0.0",
+    "npm": ">= 3.0.0"
+  },
+  "license": "MIT",
+  "author": " <>",
+  "repository": "ssh://git@gitlab.weibo.cn:2222/SINA_MFE_COMPONENTS/base-component-infiniteScroll.git"
+}

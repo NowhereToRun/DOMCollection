@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="author" content="Paul Lewis" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infinite Scroll</title>
+  <link rel="stylesheet" href="https://mjs.sinaimg.cn/wap/project/homev8/8.2.83/homev8/homev8.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+  <script>
+    ! function(w, d, m) {
+      function r() {
+        var t = 100,
+          o = 750,
+          e = d.documentElement.clientWidth || w.innerWidth,
+          n = m.max(m.min(e, 480), 320),
+          h = 50;
+        320 >= n && (h = m.floor(n / o * t * .99)), n > 320 && 362 >= n && (h = m.floor(n / o * t * 1)), n > 362 && 375 >= n && (h = m.floor(n / o * t * 1)), n > 375 && (h = m.floor(n / o * t * .97)), d.querySelector("html").style.fontSize = h + "px"
+      };
+      r();
+      w.onresize = function() {
+        r()
+      }
+    }(window, document, Math);
+  </script>
+</head>
+
+<body>
+  <div id="templates">
+    <a class="ls_f j_tombstone" data-id="{{id}}">
+        <b class="ls_f_b">
+          <em class="ls_f_e ls_f_e_l"></em>
+        </b>
+      </a>
+    <a class="news_list_row j_msg_2" href="" title="" data-id="{{id}}">
+      <section class="m_f_a">
+        <figure class="m_f_div i_bg">
+          <img class="img_width finpic" src="" alt="">
+        </figure>
+        <aside class="m_f_con">
+          <h2 class="m_f_con_t cm_tit"></h2>
+          <blockquote class="cm_f_ic cm_f_ic_l">
+            <em class="m_f_con_n m_f_con_n_r">
+              <span class="m_f_con_ic_l m_f_con_ic icon_com"></span>
+              <span class="m_f_con_com_n"></span>
+            </em>
+            <cite class="m_f_con_add"></cite>
+          </blockquote>
+        </aside>
+      </section>
+    </a>
+    <a class="m_video_box show j_msg" href="JavaScript:void(0)" title="请后端同学务必填写标题" style="position:absolute;">
+      <figure class="m_video_img_box">
+        <aside class="m_video_img_bg">
+          <img class="m_video_img_bg_img" src="https://z1.sinaimg.cn/auto/resize?img=http://qncdn.miaopai.com/stream/00Im2J78YmRz~-N0DLboJ9~DeLYHH65H_1494899978.jpg&amp;size=710_400">
+        </aside>
+        <blockquote class="m_video_info "><span>935次播放</span><span class="fr">382KB</span><span class="m_video_info_line"></span>
+          <time class="fr">05:38</time>
+        </blockquote>
+        <span class="cm_btn_paly icon_s_video cm_c_c"></span>
+      </figure>
+      <h2 class="m_video_tit cm_tit">跟着《爱乐之城》寻找洛杉矶10大浪漫地标跟着《爱乐之城》寻找洛杉矶10大浪漫地标</h2>
+    </a>
+  </div>
+  <ul id="container" class="page_main" style="background:#f8f8f8">
+
+
+  </ul>
+</body>
+
+</html>
