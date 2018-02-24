@@ -61,7 +61,9 @@ ContentSource.prototype = {
               } else {
                 item.randomModule = 'type3'
               }
+              item.randomModule = 'type1'
             })
+            
             totalNum = totalNum + data.length;
             statusPanel.addItem('Total_data_number', totalNum);
             resolve(data);
@@ -85,7 +87,9 @@ ContentSource.prototype = {
           } else {
             item.randomModule = 'type3'
           }
+          item.randomModule = 'type1'
         })
+        
         setTimeout(function() {
           totalNum = totalNum + localFakeData.length;
           statusPanel.addItem('Total_data_number', totalNum);
@@ -154,8 +158,11 @@ document.addEventListener('DOMContentLoaded', function() {
   window.scroller =
     new InfiniteScroller(
       document.querySelector('#container'),
-      new ContentSource(), 
-      {tombstoneClassName : 'j_tombstone'}
+      new ContentSource(), {
+        tombstoneClassName: 'j_tombstone',
+        scrollRunway: 0,
+        moduleOffsetTop: 200
+      }
     );
 
   var stats = new Stats();

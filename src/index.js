@@ -7,8 +7,8 @@ let statusPanel = new tools();
  * 测试方法
  */
 
-var moduleOffsetTop = 200; // 模块距离顶部距离 TODO： 需要组件配置
 var timeoutId = null;
+let moduleOffsetTop = 0; // 模块距离顶部距离
 
 // scroll direction为window系统操作鼠标滑轮的滚动方向 或者拖动滚动条的方向
 // 而不是mac触摸板 或者手机屏幕手指滑动的方向
@@ -68,7 +68,9 @@ let InfiniteScroller = function(scroller, source, config) {
   if (config) {
     config.runwayItems != null && (RUNWAY_ITEMS = config.runwayItems);
     config.runwayItemsOpposite != null && (RUNWAY_ITEMS_OPPOSITE = config.runwayItemsOpposite);
-    config.tombstoneClassName != null && (tombstoneClassName = config.tombstoneClassName)
+    config.tombstoneClassName != null && (tombstoneClassName = config.tombstoneClassName);
+    config.moduleOffsetTop != null && (moduleOffsetTop = config.moduleOffsetTop);
+    config.scrollRunway != null && (SCROLL_RUNWAY = config.scrollRunway);
   }
   this.anchorItem = {
     index: 0,
@@ -141,7 +143,6 @@ InfiniteScroller.prototype = {
     if (moduleScrollTop < 0) {
       moduleScrollTop = 0;
     }
-    // console.log(moduleScrollTop);
     var delta = moduleScrollTop - this.anchorScrollTop;
     // var delta = this.scroller_.scrollTop - this.anchorScrollTop;
     // Special case, if we get to very top, always scroll to top.
@@ -161,7 +162,7 @@ InfiniteScroller.prototype = {
     // console.log(this.anchorItem, lastScreenItem, this.anchorItem.index - RUNWAY_ITEMS_OPPOSITE, lastScreenItem.index + RUNWAY_ITEMS);
     this.showCB(this.anchorItem.index, lastScreenItem.index);
     statusPanel.addItem('First_of_this_page', this.anchorItem.index);
-    
+
     if (delta < 0) {
       // 向上滚动 ⬆︎  runway代表滚动方向 当前可视区元素第20个 则需从序号 20-RUNWAY_ITEMS 处开始补充
       //  RUNWAY_ITEMS 底部不可视区补充元素 RUNWAY_ITEMS_OPPOSITE 顶部不可视区补充元素
@@ -183,11 +184,15 @@ InfiniteScroller.prototype = {
    *     scroll should be anchored to.
    */
   calculateAnchoredItem: function(initialAnchor, delta) {
+    // var aaa = delta;
     if (delta == 0)
       return initialAnchor;
     delta += initialAnchor.offset;
     var i = initialAnchor.index;
     var tombstones = 0;
+    // if (aaa != 800) {
+    //   console.log(initialAnchor, aaa, i < this.items_.length, this.items_[i])
+    // }
     if (delta < 0) {
       while (delta < 0 && i > 0 && this.items_[i - 1].height) {
         delta += this.items_[i - 1].height;
@@ -271,7 +276,7 @@ InfiniteScroller.prototype = {
       }
 
       if (this.items_[i].node) {
-        if (this.items_[i].node.classList.contains('tombstone')) {
+        if (this.items_[i].node.classList.contains(tombstoneClassName)) {
           this.tombstones_.push(this.items_[i].node);
           this.tombstones_[this.tombstones_.length - 1].classList.add('invisible');
         } else {
@@ -301,7 +306,7 @@ InfiniteScroller.prototype = {
       }
       if (this.items_[i].node) {
         // if it's a tombstone but we have data, replace it.
-        if (this.items_[i].node.classList.contains('tombstone') &&
+        if (this.items_[i].node.classList.contains(tombstoneClassName) &&
           this.items_[i].data) {
           // TODO: Probably best to move items on top of tombstones and fade them in instead.
           // 隐藏占位墓碑元素 移动墓碑元素到可复用墓碑元素列表里
@@ -320,6 +325,7 @@ InfiniteScroller.prototype = {
 
       // 当前可视区内节点为 墓碑元素 或者 this.items_[i].node 为空（没有渲染过） 执行下面的逻辑
       // 已经渲染过的话 已从上面的判断中跳过
+      // TODO: randomModule key值命名规范  
       var dom = null;
       var templateType = this.items_[i].data && this.items_[i].data.randomModule;
       if (unusedNodesObj[templateType] && unusedNodesObj[templateType].length) {
@@ -364,6 +370,7 @@ InfiniteScroller.prototype = {
       this.anchorScrollTop += this.items_[i].height || this.tombstoneSize_;
     }
     this.anchorScrollTop += this.anchorItem.offset;
+    // console.log(this.items_, this.anchorScrollTop);
 
     // Position all nodes.
     // curPos 顶部补充元素+所有可视区元素+底部补充元素 的偏移    从第一个顶部补充元素的偏移开始

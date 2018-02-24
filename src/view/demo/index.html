@@ -26,44 +26,7 @@
     }(window, document, Math);
   </script>
   <style>
-    #templates {
-      display: none;
-    }
-
-    .news_list_row {
-      width: 100%;
-      background: rgb(248, 248, 248);
-    }
-
-    section.outer {
-      position: absolute;
-      width: 100%;
-      background-color: rgb(248, 248, 248);
-    }
-
-    .ls_f {
-      position: absolute;
-      width: 100%;
-      margin: 0;
-      padding: .22rem .2rem;
-      background: rgb(248, 248, 248);
-    }
-
-    .ls_f_b {
-      padding-left: 2.4rem;
-    }
-
-    .ls_f_e_l {
-      left: 2.4rem;
-    }
-
-    .m_video_box {
-      width: 100%;
-      margin: 0;
-      padding: 0 .2rem .2rem
-    }
-
-    #chat-timeline {
+    #container {
       margin: 0;
       padding: 0;
       overflow: hidden !important;
@@ -81,7 +44,7 @@
 
 <body>
   <div id="templates">
-    <a class="ls_f j_tombstone tombstone" data-id="{{id}}">
+    <a class="ls_f j_tombstone" data-id="{{id}}">
         <b class="ls_f_b">
           <em class="ls_f_e ls_f_e_l"></em>
         </b>
@@ -118,15 +81,10 @@
   </div>
   <div style="height:200px; background:#7fb86e"></div>
 
-  <ul id="chat-timeline" class="page_main" style="background:#f8f8f8; height:200vh;">
+  <ul id="container" class="page_main" style="background:#f8f8f8; height:200vh;">
 
 
   </ul>
-  <!-- <script src="es6-promise.js"></script> -->
-  <!-- <script src="stats.min.js"></script> -->
-  <!-- <script src="scripts/infinite-scroll.js"></script> -->
-  <!-- <script src="scripts/messages.js"></script> -->
-
 </body>
 
 </html>
