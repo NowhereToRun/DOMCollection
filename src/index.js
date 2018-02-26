@@ -22,7 +22,9 @@ let RUNWAY_ITEMS_OPPOSITE = 5;
 let SCROLL_RUNWAY = 2000;
 
 // The animation interval (in ms) for fading in content from tombstones.
-let ANIMATION_DURATION_MS = 200;
+// let ANIMATION_DURATION_MS = 200;
+let ANIMATION_DURATION_MS = 0;
+let fetchNum = 0;
 
 let tombstoneClassName = 'j_tombstone';
 
@@ -107,6 +109,9 @@ let InfiniteScroller = function(scroller, source, config) {
 }
 
 InfiniteScroller.prototype = {
+  init: function() {
+
+  },
 
   /**
    * Called when the browser window resizes to adapt to new scroller bounds and
@@ -123,7 +128,7 @@ InfiniteScroller.prototype = {
     this.tombstoneSize_ = tombstone.offsetHeight;
     this.tombstoneWidth_ = tombstone.offsetWidth;
     this.scroller_.removeChild(tombstone);
-
+    console.log('resize');
     // Reset the cached size of items in the scroller as they may no longer be
     // correct after the item content undergoes layout.
     for (var i = 0; i < this.items_.length; i++) {
@@ -159,8 +164,7 @@ InfiniteScroller.prototype = {
     // this.anchorScrollTop = this.scroller_.scrollTop;
     var lastScreenItem = this.calculateAnchoredItem(this.anchorItem, 800);
     // var lastScreenItem = this.calculateAnchoredItem(this.anchorItem, this.scroller_.offsetHeight);
-    // console.log(this.anchorItem, lastScreenItem, this.anchorItem.index - RUNWAY_ITEMS_OPPOSITE, lastScreenItem.index + RUNWAY_ITEMS);
-    this.showCB(this.anchorItem.index, lastScreenItem.index);
+    // this.showCB(this.anchorItem.index, lastScreenItem.index);
     statusPanel.addItem('First_of_this_page', this.anchorItem.index);
 
     if (delta < 0) {
@@ -267,7 +271,7 @@ InfiniteScroller.prototype = {
     var i;
     // var unusedNodes = [];
     var unusedNodesObj = {};
-    // console.log(this.items_.length, this.firstAttachedItem_, this.lastAttachedItem_);
+    // 找出需要回收的节点
     for (i = 0; i < this.items_.length; i++) {
       // Skip the items which should be visible.
       if (i == this.firstAttachedItem_) {
@@ -414,12 +418,13 @@ InfiniteScroller.prototype = {
     this.scrollRunwayEnd_ = Math.max(this.scrollRunwayEnd_, curPos + SCROLL_RUNWAY);
     // this.scrollRunway_.style.transform = 'translate(0, ' + this.scrollRunwayEnd_ + 'px)';
     // this.scroller_.scrollTop = this.anchorScrollTop;
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => {
-      console.log('reset height');
-      this.scroller_.style.height = this.scrollRunwayEnd_ + 'px';
-    }, 200);
 
+    // clearTimeout(timeoutId);
+    // timeoutId = setTimeout(() => {
+    //   console.log('reset height');
+    //   this.scroller_.style.height = this.scrollRunwayEnd_ + 'px';
+    // }, 200);
+    this.scroller_.style.height = this.scrollRunwayEnd_ + 'px';
 
     if (ANIMATION_DURATION_MS) {
       // TODO: Should probably use transition end, but there are a lot of animations we could be listening to.
@@ -449,7 +454,14 @@ InfiniteScroller.prototype = {
     if (itemsNeeded <= 0)
       return;
     this.requestInProgress_ = true;
-    this.source_.fetch(itemsNeeded).then(this.addContent.bind(this));
+    fetchNum = fetchNum + itemsNeeded;
+    console.log(fetchNum);
+    if (fetchNum >= 15) {
+      this.source_.fetch(itemsNeeded).then(this.addContent.bind(this));
+      fetchNum = 0;
+    } else {
+      this.requestInProgress_ = false;
+    }
   },
 
   /**

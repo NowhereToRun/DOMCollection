@@ -11,7 +11,7 @@ var statusPanel = new tools();
 var totalNum = 0;
 
 var INIT_TIME = new Date().getTime();
-var page = 1;
+var page = 0;
 
 function ContentSource() {
   // Collect template nodes to be cloned when needed.
@@ -23,79 +23,35 @@ function ContentSource() {
 }
 
 ContentSource.prototype = {
-  fetch: function(count) {
-    // Fetch at least 30 or count more objects for display.
-    count = Math.max(30, count);
+  fetch: function() {
     var self = this;
     return new Promise(function(resolve, reject) {
-      if (!this.noData) {
-        $.ajax({
-          url: 'https://interface.sina.cn/tech/simple_column.d.json?native=0&col=51901',
-          data: {
-            'page': page,
-            'size': 20
-          },
-          dataType: 'jsonp',
-          success: function(data, status) {
-            if (data.length == 0) {
-              console.log(0);
-              self.noData = 1;
-              let localFakeData = JSON.parse(JSON.stringify(fakeData))
-              localFakeData.forEach((item) => {
-                item.id = item.id + (new Date() - 0);
-                item.title = parseInt(Math.random() * 10) + ', ' + item.title;
-              })
-              data = localFakeData;
-            }
-            page = page + 1;
-            data.forEach((item) => {
-              item.fn = function() {
-                console.log(item.id)
-              }
-              // 构造虚假模板选择
-              var randomNum = Math.random();
-              if (randomNum < 0.3) {
-                item.randomModule = 'type1'
-              } else if (randomNum < 0.7) {
-                item.randomModule = 'type2'
-              } else {
-                item.randomModule = 'type3'
-              }
-              item.randomModule = 'type1'
-            })
-            
-            totalNum = totalNum + data.length;
-            statusPanel.addItem('Total_data_number', totalNum);
-            resolve(data);
-          }
-        })
-      } else {
-        console.log(0);
-        let localFakeData = JSON.parse(JSON.stringify(fakeData))
-        localFakeData.forEach((item) => {
-          item.id = item.id + (new Date() - 0);
-          item.title = parseInt(Math.random() * 10) + ', ' + item.title;
-          item.fn = function() {
-            console.log(item.id);
-          }
-          // 构造虚假模板选择
-          var randomNum = Math.random();
-          if (randomNum < 0.3) {
-            item.randomModule = 'type1'
-          } else if (randomNum < 0.7) {
-            item.randomModule = 'type2'
-          } else {
-            item.randomModule = 'type3'
-          }
+      let localFakeData = JSON.parse(JSON.stringify(fakeData))
+      localFakeData.forEach((item, index) => {
+        item.id = item.id + (new Date() - 0);
+        item.title = page * 20 + index + ', ' + item.title;
+        // item.fn = function() {
+        //   console.log(item.id);
+        // }
+        // 构造虚假模板选择
+        var randomNum = Math.random();
+        if (randomNum < 0.3) {
           item.randomModule = 'type1'
-        })
-        
-        setTimeout(function() {
-          totalNum = totalNum + localFakeData.length;
-          statusPanel.addItem('Total_data_number', totalNum);
-          resolve(localFakeData);
-        }, 500);
-      }
+        } else if (randomNum < 0.7) {
+          item.randomModule = 'type2'
+        } else {
+          item.randomModule = 'type3'
+        }
+        // item.randomModule = 'type1'
+      })
+      page = page + 1;
+
+      setTimeout(function() {
+        totalNum = totalNum + localFakeData.length;
+        statusPanel.addItem('Total_data_number', totalNum);
+        resolve(localFakeData);
+      }, 500);
+      // }
 
     }.bind(this));
   },
