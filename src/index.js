@@ -26,6 +26,8 @@ let ANIMATION_DURATION_MS = 0;
 
 let tombstoneClassName = 'j_tombstone';
 
+let collectBottomDOMFlag = true; // 向下滚动时是否需要回收DOM标记 默认情况下回收 当刚加载完数据 且滑动方向仍然向下时 不回收
+
 let InfiniteScrollerSource = function() {}
 
 InfiniteScrollerSource.prototype = {
@@ -92,19 +94,7 @@ let InfiniteScroller = function(scroller, source, config) {
   // this.scroller_.addEventListener('scroll', this.onScroll_.bind(this));
   window.addEventListener('scroll', this.onScroll_.bind(this));
   window.addEventListener('resize', this.onResize_.bind(this));
-
-  // Create an element to force the scroller to allow scrolling to a certain
-  // point.
-  // this.scrollRunway_ = document.createElement('div');
-  // // Internet explorer seems to require some text in this div in order to
-  // // ensure that it can be scrolled to.
-  // this.scrollRunway_.textContent = ' ';
   this.scrollRunwayEnd_ = 0;
-  // this.scrollRunway_.style.position = 'absolute';
-  // this.scrollRunway_.style.height = '1px';
-  // this.scrollRunway_.style.width = '1px';
-  // this.scrollRunway_.style.transition = 'transform 0.2s';
-  // this.scroller_.appendChild(this.scrollRunway_);
   this.init(20);
   this.onResize_();
 }
@@ -115,7 +105,7 @@ InfiniteScroller.prototype = {
       this.addItem_();
     }
     this.lastAttachedItem_ = initNum;
-    this.maybeRequestContent()
+    this.maybeRequestContent();
   },
 
   /**
@@ -175,6 +165,7 @@ InfiniteScroller.prototype = {
     if (delta < 0) {
       // 向上滚动 ⬆︎  runway代表滚动方向 当前可视区元素第20个 则需从序号 20-RUNWAY_ITEMS 处开始补充
       //  RUNWAY_ITEMS 底部不可视区补充元素 RUNWAY_ITEMS_OPPOSITE 顶部不可视区补充元素
+      this.collectBottomDOMFlag = true;
       this.fill(this.anchorItem.index - RUNWAY_ITEMS, lastScreenItem.index + RUNWAY_ITEMS_OPPOSITE);
     } else {
       // 初始化 或者向下滚动(向底部) ⬇︎
@@ -321,6 +312,10 @@ InfiniteScroller.prototype = {
       // Skip the items which should be visible.
       if (i == this.firstAttachedItem_) {
         i = this.lastAttachedItem_ - 1;
+        if (!this.collectBottomDOMFlag) {
+          // 如果刚加载完数据 且滚动方向向下 不回收底部的DOM
+          i = this.items_.length;
+        }
         continue;
       }
 
@@ -347,7 +342,7 @@ InfiniteScroller.prototype = {
     var tombstoneAnimations = {};
     // Create DOM nodes.
     // 加载更多来的数据 一次添加完毕
-    var endPoint = from === 'fetch'? this.loadedItems_: this.lastAttachedItem_;
+    var endPoint = from === 'fetch' ? this.loadedItems_ : this.lastAttachedItem_;
     for (i = this.firstAttachedItem_; i < endPoint; i++) {
       // this.items_中总数据量不超过已加载的数据量
       if (i >= this.loadedItems_) {
@@ -490,6 +485,7 @@ InfiniteScroller.prototype = {
    */
   addContent: function(items) {
     this.requestInProgress_ = false;
+    this.collectBottomDOMFlag = false;
     for (var i = 0; i < items.length; i++) {
       if (this.items_.length <= this.loadedItems_)
         this.addItem_();
