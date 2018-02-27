@@ -42,15 +42,19 @@ ContentSource.prototype = {
         } else {
           item.randomModule = 'type3'
         }
-        // item.randomModule = 'type1'
+        item.randomModule = 'type2'
       })
       page = page + 1;
 
       setTimeout(function() {
-        totalNum = totalNum + localFakeData.length;
-        statusPanel.addItem('Total_data_number', totalNum);
-        resolve(localFakeData);
-      }, 500);
+        if (page <= 10) {
+          totalNum = totalNum + localFakeData.length;
+          statusPanel.addItem('Total_data_number', totalNum);
+          resolve(localFakeData);
+        } else {
+          resolve([]);
+        }
+      }, 1500);
       // }
 
     }.bind(this));

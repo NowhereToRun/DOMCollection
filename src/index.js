@@ -13,10 +13,10 @@ let moduleOffsetTop = 0; // 模块距离顶部距离
 // scroll direction为window系统操作鼠标滑轮的滚动方向 或者拖动滚动条的方向
 // 而不是mac触摸板 或者手机屏幕手指滑动的方向
 // Number of items to instantiate beyond current view in the scroll direction.
-let RUNWAY_ITEMS = 10;
+let RUNWAY_ITEMS = 10; // 不能为0
 
 // Number of items to instantiate beyond current view in the opposite direction.
-let RUNWAY_ITEMS_OPPOSITE = 5;
+let RUNWAY_ITEMS_OPPOSITE = 10;
 
 // The number of pixels of additional length to allow scrolling to.
 let SCROLL_RUNWAY = 2000;
@@ -24,7 +24,6 @@ let SCROLL_RUNWAY = 2000;
 // The animation interval (in ms) for fading in content from tombstones.
 // let ANIMATION_DURATION_MS = 200;
 let ANIMATION_DURATION_MS = 0;
-let fetchNum = 0;
 
 let tombstoneClassName = 'j_tombstone';
 
@@ -80,6 +79,8 @@ let InfiniteScroller = function(scroller, source, config) {
   };
   this.firstAttachedItem_ = 0; // 可视区顶部应补充的Item编码，最小为0。会根据 RUNWAY_ITEMS 与 RUNWAY_ITEMS_OPPOSITE 的值动态计算。例如向页面底部滚动 取值为 当前可视区第一个元素index-RUNWAY_ITEMS_OPPOSITE；向页面顶部滚动 取值为 当前可视区第一个元素index-RUNWAY_ITEMS
   this.lastAttachedItem_ = 0; // 可视区底部应补充的Item编码
+  this.firstScreenItemIndex = 0;
+  this.lastScreenItemIndex = 0;
   this.anchorScrollTop = 0;
   this.tombstoneSize_ = 0;
   this.tombstoneWidth_ = 0;
@@ -105,12 +106,17 @@ let InfiniteScroller = function(scroller, source, config) {
   // this.scrollRunway_.style.width = '1px';
   // this.scrollRunway_.style.transition = 'transform 0.2s';
   // this.scroller_.appendChild(this.scrollRunway_);
+  this.init(20);
   this.onResize_();
 }
 
 InfiniteScroller.prototype = {
-  init: function() {
-
+  init: function(initNum) {
+    for (var i = 0; i < initNum; i++) {
+      this.addItem_();
+    }
+    this.lastAttachedItem_ = initNum;
+    this.maybeRequestContent()
   },
 
   /**
@@ -128,7 +134,6 @@ InfiniteScroller.prototype = {
     this.tombstoneSize_ = tombstone.offsetHeight;
     this.tombstoneWidth_ = tombstone.offsetWidth;
     this.scroller_.removeChild(tombstone);
-    console.log('resize');
     // Reset the cached size of items in the scroller as they may no longer be
     // correct after the item content undergoes layout.
     for (var i = 0; i < this.items_.length; i++) {
@@ -166,7 +171,8 @@ InfiniteScroller.prototype = {
     // var lastScreenItem = this.calculateAnchoredItem(this.anchorItem, this.scroller_.offsetHeight);
     // this.showCB(this.anchorItem.index, lastScreenItem.index);
     statusPanel.addItem('First_of_this_page', this.anchorItem.index);
-
+    this.firstScreenItemIndex = this.anchorItem.index;
+    this.lastScreenItemIndex = lastScreenItem.index;
     if (delta < 0) {
       // 向上滚动 ⬆︎  runway代表滚动方向 当前可视区元素第20个 则需从序号 20-RUNWAY_ITEMS 处开始补充
       //  RUNWAY_ITEMS 底部不可视区补充元素 RUNWAY_ITEMS_OPPOSITE 顶部不可视区补充元素
@@ -261,10 +267,51 @@ InfiniteScroller.prototype = {
   },
 
   /**
+   * Create DOM nodes
+   */
+  chreatDOM: function(unusedNodesObj, i) {
+    if (this.items_[i].node) {
+      // if it's a tombstone but we have data, replace it.
+      if (this.items_[i].node.classList.contains(tombstoneClassName) &&
+        this.items_[i].data) {
+        // TODO: Probably best to move items on top of tombstones and fade them in instead.
+        // 隐藏占位墓碑元素 移动墓碑元素到可复用墓碑元素列表里
+        if (ANIMATION_DURATION_MS) {
+          this.items_[i].node.style.zIndex = 1;
+          tombstoneAnimations[i] = [this.items_[i].node, this.items_[i].top - this.anchorScrollTop];
+        } else {
+          this.items_[i].node.classList.add('invisible');
+          this.tombstones_.push(this.items_[i].node);
+        }
+        this.items_[i].node = null;
+      } else {
+        return
+      }
+    }
+
+    // 当前可视区内节点为 墓碑元素 或者 this.items_[i].node 为空（没有渲染过） 执行下面的逻辑
+    // 已经渲染过的话 已从上面的判断中跳过
+    // TODO: randomModule key值命名规范  
+    var dom = null;
+    var templateType = this.items_[i].data && this.items_[i].data.randomModule;
+    if (unusedNodesObj[templateType] && unusedNodesObj[templateType].length) {
+      console.log('可复用');
+      dom = unusedNodesObj[templateType].pop();
+    }
+    var node = this.items_[i].data ? this.source_.render(this.items_[i].data, dom) : this.getTombstone();
+    // Maybe don't do this if it's already attached?
+    node.style.position = 'absolute';
+    this.items_[i].top = -1;
+    this.scroller_.appendChild(node);
+    this.items_[i].node = node;
+  },
+
+  /**
    * Attaches content to the scroller and updates the scroll position if
    * necessary.
+   * @param {string} from 触发attachContent方法的来源 如果是fetch回来的数据 则一次把dom高度全部计算出来
    */
-  attachContent: function() {
+  attachContent: function(from) {
     // Collect nodes which will no longer be rendered for reuse.
     // TODO: Limit this based on the change in visible items rather than looping
     // over all items.
@@ -304,52 +351,23 @@ InfiniteScroller.prototype = {
     var tombstoneAnimations = {};
     // Create DOM nodes.
     for (i = this.firstAttachedItem_; i < this.lastAttachedItem_; i++) {
-      while (this.items_.length <= i) {
-        this.addItem_();
-        console.log('addItem');
+      // this.items_中总数据量不超过已加载的数据量
+      // TODO: 这个地方的判断有待优化  现在应该有许多次break
+      if (i >= this.loadedItems_) {
+        console.log('break');
+        break;
       }
-      if (this.items_[i].node) {
-        // if it's a tombstone but we have data, replace it.
-        if (this.items_[i].node.classList.contains(tombstoneClassName) &&
-          this.items_[i].data) {
-          // TODO: Probably best to move items on top of tombstones and fade them in instead.
-          // 隐藏占位墓碑元素 移动墓碑元素到可复用墓碑元素列表里
-          if (ANIMATION_DURATION_MS) {
-            this.items_[i].node.style.zIndex = 1;
-            tombstoneAnimations[i] = [this.items_[i].node, this.items_[i].top - this.anchorScrollTop];
-          } else {
-            this.items_[i].node.classList.add('invisible');
-            this.tombstones_.push(this.items_[i].node);
-          }
-          this.items_[i].node = null;
-        } else {
-          continue;
-        }
-      }
-
-      // 当前可视区内节点为 墓碑元素 或者 this.items_[i].node 为空（没有渲染过） 执行下面的逻辑
-      // 已经渲染过的话 已从上面的判断中跳过
-      // TODO: randomModule key值命名规范  
-      var dom = null;
-      var templateType = this.items_[i].data && this.items_[i].data.randomModule;
-      if (unusedNodesObj[templateType] && unusedNodesObj[templateType].length) {
-        console.log('可复用');
-        dom = unusedNodesObj[templateType].pop();
-      }
-
-      var node = this.items_[i].data ? this.source_.render(this.items_[i].data, dom) : this.getTombstone();
-      // Maybe don't do this if it's already attached?
-      node.style.position = 'absolute';
-      this.items_[i].top = -1;
-      this.scroller_.appendChild(node);
-      this.items_[i].node = node;
+      this.chreatDOM(unusedNodesObj, i);
     }
-    // debugger
-    // Remove all unused nodes
-    // console.log(unusedNodes);
-    // while (unusedNodes.length) {
-    //   this.scroller_.removeChild(unusedNodes.pop());
+
+    // 加载更多来的数据 一次渲染完毕
+    // if (from === 'fetch') {
+    //   for (i = this.lastAttachedItem_; i < this.loadedItems_; i++) {
+    //     this.chreatDOM(unusedNodesObj, i);
+    //   }
     // }
+    
+    // Remove all unused nodes
     for (var i in unusedNodesObj) {
       while (unusedNodesObj[i].length) {
         this.scroller_.removeChild(unusedNodesObj[i].pop());
@@ -358,13 +376,18 @@ InfiniteScroller.prototype = {
     unusedNodesObj = null;
     // Get the height of all nodes which haven't been measured yet.
     for (i = this.firstAttachedItem_; i < this.lastAttachedItem_; i++) {
+      if (i > this.loadedItems_ - RUNWAY_ITEMS) {
+        break;
+      }
       // Only cache the height if we have the real contents, not a placeholder.
       if (this.items_[i].data && !this.items_[i].height) {
         this.items_[i].height = this.items_[i].node.offsetHeight;
         this.items_[i].width = this.items_[i].node.offsetWidth;
       }
     }
-
+    console.log(this.lastAttachedItem_);
+    console.log(JSON.parse(JSON.stringify(this.items_)), from);
+    console.log(this.items_);
     // Fix scroll position in case we have realized the heights of elements
     // that we didn't used to know.
     // TODO: We should only need to do this when a height of an item becomes
@@ -401,6 +424,9 @@ InfiniteScroller.prototype = {
       this.items_[i].node.style.transition = 'transform ' + ANIMATION_DURATION_MS + 'ms';
     }
     for (i = this.firstAttachedItem_; i < this.lastAttachedItem_; i++) {
+      if (this.lastScreenItemIndex > this.loadedItems_ - RUNWAY_ITEMS) {
+        break;
+      }
       var anim = tombstoneAnimations[i];
       if (anim) {
         anim[0].style.transition = 'transform ' + ANIMATION_DURATION_MS + 'ms, opacity ' + ANIMATION_DURATION_MS + 'ms';
@@ -454,14 +480,12 @@ InfiniteScroller.prototype = {
     if (itemsNeeded <= 0)
       return;
     this.requestInProgress_ = true;
-    fetchNum = fetchNum + itemsNeeded;
-    console.log(fetchNum);
-    if (fetchNum >= 15) {
-      this.source_.fetch(itemsNeeded).then(this.addContent.bind(this));
-      fetchNum = 0;
-    } else {
-      this.requestInProgress_ = false;
-    }
+    console.log('maybeRequestContent');
+    this.source_.fetch(itemsNeeded).then((item) => {
+      if (item.length) {
+        this.addContent(item);
+      }
+    });
   },
 
   /**
@@ -490,7 +514,7 @@ InfiniteScroller.prototype = {
         this.addItem_();
       this.items_[this.loadedItems_++].data = items[i];
     }
-    this.attachContent();
+    this.attachContent('fetch');
   }
 }
 
