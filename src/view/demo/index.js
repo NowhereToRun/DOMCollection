@@ -42,7 +42,7 @@ ContentSource.prototype = {
         } else {
           item.randomModule = 'type3'
         }
-        item.randomModule = 'type2'
+        item.randomModule = 'type1'
       })
       page = page + 1;
 

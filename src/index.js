@@ -7,7 +7,6 @@ let statusPanel = new tools();
  * 测试方法
  */
 
-var timeoutId = null;
 let moduleOffsetTop = 0; // 模块距离顶部距离
 
 // scroll direction为window系统操作鼠标滑轮的滚动方向 或者拖动滚动条的方向
@@ -316,7 +315,6 @@ InfiniteScroller.prototype = {
     // TODO: Limit this based on the change in visible items rather than looping
     // over all items.
     var i;
-    // var unusedNodes = [];
     var unusedNodesObj = {};
     // 找出需要回收的节点
     for (i = 0; i < this.items_.length; i++) {
@@ -331,8 +329,6 @@ InfiniteScroller.prototype = {
           this.tombstones_.push(this.items_[i].node);
           this.tombstones_[this.tombstones_.length - 1].classList.add('invisible');
         } else {
-          // unusedNodes.push(this.items_[i].node);
-
           // add 根据模板类型回收
           var moduleType = this.items_[i].data.randomModule;
           if (Object.prototype.toString.call(unusedNodesObj[moduleType]) === '[object Array]') {
@@ -350,9 +346,10 @@ InfiniteScroller.prototype = {
 
     var tombstoneAnimations = {};
     // Create DOM nodes.
-    for (i = this.firstAttachedItem_; i < this.lastAttachedItem_; i++) {
+    // 加载更多来的数据 一次添加完毕
+    var endPoint = from === 'fetch'? this.loadedItems_: this.lastAttachedItem_;
+    for (i = this.firstAttachedItem_; i < endPoint; i++) {
       // this.items_中总数据量不超过已加载的数据量
-      // TODO: 这个地方的判断有待优化  现在应该有许多次break
       if (i >= this.loadedItems_) {
         console.log('break');
         break;
@@ -360,13 +357,6 @@ InfiniteScroller.prototype = {
       this.chreatDOM(unusedNodesObj, i);
     }
 
-    // 加载更多来的数据 一次渲染完毕
-    // if (from === 'fetch') {
-    //   for (i = this.lastAttachedItem_; i < this.loadedItems_; i++) {
-    //     this.chreatDOM(unusedNodesObj, i);
-    //   }
-    // }
-    
     // Remove all unused nodes
     for (var i in unusedNodesObj) {
       while (unusedNodesObj[i].length) {
@@ -375,8 +365,8 @@ InfiniteScroller.prototype = {
     }
     unusedNodesObj = null;
     // Get the height of all nodes which haven't been measured yet.
-    for (i = this.firstAttachedItem_; i < this.lastAttachedItem_; i++) {
-      if (i > this.loadedItems_ - RUNWAY_ITEMS) {
+    for (i = this.firstAttachedItem_; i < endPoint; i++) {
+      if (i >= this.loadedItems_) {
         break;
       }
       // Only cache the height if we have the real contents, not a placeholder.
@@ -385,9 +375,7 @@ InfiniteScroller.prototype = {
         this.items_[i].width = this.items_[i].node.offsetWidth;
       }
     }
-    console.log(this.lastAttachedItem_);
-    console.log(JSON.parse(JSON.stringify(this.items_)), from);
-    console.log(this.items_);
+
     // Fix scroll position in case we have realized the heights of elements
     // that we didn't used to know.
     // TODO: We should only need to do this when a height of an item becomes
@@ -397,7 +385,6 @@ InfiniteScroller.prototype = {
       this.anchorScrollTop += this.items_[i].height || this.tombstoneSize_;
     }
     this.anchorScrollTop += this.anchorItem.offset;
-    // console.log(this.items_, this.anchorScrollTop);
 
     // Position all nodes.
     // curPos 顶部补充元素+所有可视区元素+底部补充元素 的偏移    从第一个顶部补充元素的偏移开始
@@ -423,7 +410,7 @@ InfiniteScroller.prototype = {
       anim[0].offsetTop;
       this.items_[i].node.style.transition = 'transform ' + ANIMATION_DURATION_MS + 'ms';
     }
-    for (i = this.firstAttachedItem_; i < this.lastAttachedItem_; i++) {
+    for (i = this.firstAttachedItem_; i < endPoint; i++) {
       if (this.lastScreenItemIndex > this.loadedItems_ - RUNWAY_ITEMS) {
         break;
       }
@@ -444,12 +431,6 @@ InfiniteScroller.prototype = {
     this.scrollRunwayEnd_ = Math.max(this.scrollRunwayEnd_, curPos + SCROLL_RUNWAY);
     // this.scrollRunway_.style.transform = 'translate(0, ' + this.scrollRunwayEnd_ + 'px)';
     // this.scroller_.scrollTop = this.anchorScrollTop;
-
-    // clearTimeout(timeoutId);
-    // timeoutId = setTimeout(() => {
-    //   console.log('reset height');
-    //   this.scroller_.style.height = this.scrollRunwayEnd_ + 'px';
-    // }, 200);
     this.scroller_.style.height = this.scrollRunwayEnd_ + 'px';
 
     if (ANIMATION_DURATION_MS) {
