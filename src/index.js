@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Feed+DOM回收组件
+ * @Author: zihao5@staff.sina.com.cn 
+ * @Date: 2018-02-28 15:06:06 
+ * @Last Modified by: zihao5@staff.sina.com.cn
+ * @Last Modified time: 2018-02-28 15:06:38
+ */
 class InfiniteScrollerTemp {
   constructor(scroller, source, config) {
     if (!scroller || !source) {
@@ -31,8 +38,8 @@ class InfiniteScrollerTemp {
     this._items = []; // 所有数据列表
     this._loadedItems = 0;
     this.requestInProgress_ = false;
-    window.addEventListener('scroll', this._onScroll.bind(this));
     this.scrollRunwayEnd_ = 0;
+    window.addEventListener('scroll', this._onScroll.bind(this));
     this._onResize();
   }
 
