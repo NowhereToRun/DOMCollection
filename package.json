@@ -19,6 +19,6 @@
     "npm": ">= 3.0.0"
   },
   "license": "MIT",
-  "author": " <>",
+  "author": "zihao5@staff.sina.com.cn",
   "repository": "ssh://git@gitlab.weibo.cn:2222/SINA_MFE_COMPONENTS/base-component-infiniteScroll.git"
 }

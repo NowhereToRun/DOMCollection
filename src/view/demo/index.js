@@ -1,4 +1,4 @@
-import InfiniteScroller from '../../index';
+import InfiniteScrollerTemp from '../../index';
 import fakeData from './message';
 import '../../css/index.css';
 import Stats from './stats.js'
@@ -140,14 +140,16 @@ document.addEventListener('DOMContentLoaded', function() {
   let feedScrollerConfig = {
     tombstoneClassName: 'j_tombstone',
     scrollRunway: 0,
-    moduleOffsetTop: 1000
+    listMarginTop: 1000
   };
-  let feedScroller = new InfiniteScroller(feedList, new ContentSource(), feedScrollerConfig);
+  let feedScroller = new InfiniteScrollerTemp(feedList, new ContentSource(), feedScrollerConfig);
 
   domMonitor();
 
   window.addEventListener('scroll', function() {
     statusPanel.addItem('First_of_this_page', feedScroller.firstScreenItemIndex);
   })
+
+  // new InfiniteScrollerTemp(1,1);
 
 });
