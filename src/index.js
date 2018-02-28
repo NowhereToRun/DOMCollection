@@ -1,18 +1,9 @@
-/**
- * 测试方法
- */
-import tools from './view/demo/tools'
-let statusPanel = new tools();
-/**
- * 测试方法
- */
-
 let moduleOffsetTop = 0; // 模块距离顶部距离
-
+let clientHeight = window.screen.height;
 // scroll direction为window系统操作鼠标滑轮的滚动方向 或者拖动滚动条的方向
 // 而不是mac触摸板 或者手机屏幕手指滑动的方向
 // Number of items to instantiate beyond current view in the scroll direction.
-let RUNWAY_ITEMS = 10; // 不能为0
+let RUNWAY_ITEMS = 5; // 不能为0
 
 // Number of items to instantiate beyond current view in the opposite direction.
 let RUNWAY_ITEMS_OPPOSITE = 10;
@@ -93,9 +84,8 @@ let InfiniteScroller = function(scroller, source, config) {
   this.requestInProgress_ = false;
   // this.scroller_.addEventListener('scroll', this.onScroll_.bind(this));
   window.addEventListener('scroll', this.onScroll_.bind(this));
-  window.addEventListener('resize', this.onResize_.bind(this));
+  // window.addEventListener('resize', this.onResize_.bind(this));
   this.scrollRunwayEnd_ = 0;
-  this.init(20);
   this.onResize_();
 }
 
@@ -139,13 +129,13 @@ InfiniteScroller.prototype = {
    */
   onScroll_: function() {
     var moduleScrollTop = window.scrollY - moduleOffsetTop;
+    var visualArea = clientHeight;
     if (moduleScrollTop < 0) {
+      visualArea = visualArea + moduleScrollTop;
       moduleScrollTop = 0;
     }
     var delta = moduleScrollTop - this.anchorScrollTop;
-    // var delta = this.scroller_.scrollTop - this.anchorScrollTop;
     // Special case, if we get to very top, always scroll to top.
-    // if (this.scroller_.scrollTop == 0) {
     if (moduleScrollTop == 0) {
       this.anchorItem = {
         index: 0,
@@ -156,10 +146,9 @@ InfiniteScroller.prototype = {
     }
     this.anchorScrollTop = moduleScrollTop;
     // this.anchorScrollTop = this.scroller_.scrollTop;
-    var lastScreenItem = this.calculateAnchoredItem(this.anchorItem, 800);
+    var lastScreenItem = this.calculateAnchoredItem(this.anchorItem, visualArea);
     // var lastScreenItem = this.calculateAnchoredItem(this.anchorItem, this.scroller_.offsetHeight);
     // this.showCB(this.anchorItem.index, lastScreenItem.index);
-    statusPanel.addItem('First_of_this_page', this.anchorItem.index);
     this.firstScreenItemIndex = this.anchorItem.index;
     this.lastScreenItemIndex = lastScreenItem.index;
     if (delta < 0) {
@@ -184,15 +173,11 @@ InfiniteScroller.prototype = {
    *     scroll should be anchored to.
    */
   calculateAnchoredItem: function(initialAnchor, delta) {
-    // var aaa = delta;
     if (delta == 0)
       return initialAnchor;
     delta += initialAnchor.offset;
     var i = initialAnchor.index;
     var tombstones = 0;
-    // if (aaa != 800) {
-    //   console.log(initialAnchor, aaa, i < this.items_.length, this.items_[i])
-    // }
     if (delta < 0) {
       while (delta < 0 && i > 0 && this.items_[i - 1].height) {
         delta += this.items_[i - 1].height;
@@ -285,10 +270,11 @@ InfiniteScroller.prototype = {
     var dom = null;
     var templateType = this.items_[i].data && this.items_[i].data.randomModule;
     if (unusedNodesObj[templateType] && unusedNodesObj[templateType].length) {
-      console.log('可复用');
+      // console.log('可复用');
       dom = unusedNodesObj[templateType].pop();
     }
-    var node = this.items_[i].data ? this.source_.render(this.items_[i].data, dom) : this.getTombstone();
+    // var node = this.items_[i].data ? this.source_.render(this.items_[i].data, dom) : this.getTombstone();
+    var node = this.source_.render(this.items_[i].data, dom);
     // Maybe don't do this if it's already attached?
     node.style.position = 'absolute';
     this.items_[i].top = -1;
@@ -305,8 +291,10 @@ InfiniteScroller.prototype = {
     // Collect nodes which will no longer be rendered for reuse.
     // TODO: Limit this based on the change in visible items rather than looping
     // over all items.
+    // console.log(from,this.lastAttachedItem_,this.items_.length  );
     var i;
     var unusedNodesObj = {};
+    // console.log('firstScreenItemIndex', this.firstScreenItemIndex, 'lastScreenItemIndex', this.lastScreenItemIndex, 'firstAttachedItem_', this.firstAttachedItem_, 'lastAttachedItem_', this.lastAttachedItem_);
     // 找出需要回收的节点
     for (i = 0; i < this.items_.length; i++) {
       // Skip the items which should be visible.
@@ -346,7 +334,6 @@ InfiniteScroller.prototype = {
     for (i = this.firstAttachedItem_; i < endPoint; i++) {
       // this.items_中总数据量不超过已加载的数据量
       if (i >= this.loadedItems_) {
-        console.log('break');
         break;
       }
       this.chreatDOM(unusedNodesObj, i);
@@ -377,16 +364,17 @@ InfiniteScroller.prototype = {
     // known above.
     this.anchorScrollTop = 0;
     for (i = 0; i < this.anchorItem.index; i++) {
+      // if (i >= this.loadedItems_) {
+      //   break;
+      // }
       this.anchorScrollTop += this.items_[i].height || this.tombstoneSize_;
     }
     this.anchorScrollTop += this.anchorItem.offset;
-
     // Position all nodes.
     // curPos 顶部补充元素+所有可视区元素+底部补充元素 的偏移    从第一个顶部补充元素的偏移开始
     // 例如 拖动滚动条方向向下（触摸手势方向向上）
     // 当前可视区第一个元素的index为10，则 curPos 为第 10-RUNWAY_ITEMS_OPPOSITE 元素的 translateY
     var curPos = this.anchorScrollTop - this.anchorItem.offset; // 目前取的是 可视区内首个元素 距离可滑动列表顶部的距离  其实就是他的translateY
-    // console.log(this.anchorItem.index, this.firstAttachedItem_,curPos);
     i = this.anchorItem.index;
     while (i > this.firstAttachedItem_) {
       curPos -= this.items_[i - 1].height || this.tombstoneSize_;
@@ -406,7 +394,11 @@ InfiniteScroller.prototype = {
       this.items_[i].node.style.transition = 'transform ' + ANIMATION_DURATION_MS + 'ms';
     }
     for (i = this.firstAttachedItem_; i < endPoint; i++) {
-      if (this.lastScreenItemIndex > this.loadedItems_ - RUNWAY_ITEMS) {
+      // if (this.lastScreenItemIndex > this.loadedItems_ - RUNWAY_ITEMS) {
+      //   console.log('break');
+      //   break;
+      // }
+      if (i >= this.loadedItems_) {
         break;
       }
       var anim = tombstoneAnimations[i];
@@ -456,7 +448,6 @@ InfiniteScroller.prototype = {
     if (itemsNeeded <= 0)
       return;
     this.requestInProgress_ = true;
-    console.log('maybeRequestContent');
     this.source_.fetch(itemsNeeded).then((item) => {
       if (item.length) {
         this.addContent(item);

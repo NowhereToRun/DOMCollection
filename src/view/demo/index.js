@@ -9,8 +9,6 @@ import {
 import tools from './tools'
 var statusPanel = new tools();
 var totalNum = 0;
-
-var INIT_TIME = new Date().getTime();
 var page = 0;
 
 function ContentSource() {
@@ -42,25 +40,26 @@ ContentSource.prototype = {
         } else {
           item.randomModule = 'type3'
         }
-        item.randomModule = 'type1'
+        // item.randomModule = 'type1'
       })
       page = page + 1;
 
       setTimeout(function() {
-        if (page <= 10) {
+        if (page <= 50) {
           totalNum = totalNum + localFakeData.length;
           statusPanel.addItem('Total_data_number', totalNum);
           resolve(localFakeData);
         } else {
           resolve([]);
         }
-      }, 1500);
+      }, 500);
       // }
 
     }.bind(this));
   },
 
   createTombstone: function() {
+    console.log('createTombstone');
     return this.tombstone_.cloneNode(true);
   },
 
@@ -114,17 +113,7 @@ function numDomNodes(node) {
   }, 0);
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  window.scroller =
-    new InfiniteScroller(
-      document.querySelector('#container'),
-      new ContentSource(), {
-        tombstoneClassName: 'j_tombstone',
-        scrollRunway: 0,
-        moduleOffsetTop: 200
-      }
-    );
-
+function domMonitor() {
   var stats = new Stats();
   var domPanel = new Stats.Panel('DOM Nodes', '#0ff', '#002');
   stats.addPanel(domPanel);
@@ -144,6 +133,21 @@ document.addEventListener('DOMContentLoaded', function() {
         domPanel.update(numDomNodes(document.body), 1500)
       }, 500)
   }, TIMEOUT);
+}
 
+document.addEventListener('DOMContentLoaded', function() {
+  const feedList = document.querySelector('#container');
+  let feedScrollerConfig = {
+    tombstoneClassName: 'j_tombstone',
+    scrollRunway: 0,
+    moduleOffsetTop: 1000
+  };
+  let feedScroller = new InfiniteScroller(feedList, new ContentSource(), feedScrollerConfig);
+
+  domMonitor();
+
+  window.addEventListener('scroll', function() {
+    statusPanel.addItem('First_of_this_page', feedScroller.firstScreenItemIndex);
+  })
 
 });
