@@ -26,7 +26,11 @@ ContentSource.prototype = {
     return new Promise(function(resolve, reject) {
       let localFakeData = JSON.parse(JSON.stringify(fakeData))
       localFakeData.forEach((item, index) => {
-        item.id = item.id + (new Date() - 0);
+        if (page == 0 && index == 1) {
+
+        } else {
+          item.id = item.id + (new Date() - 0);
+        }
         item.title = page * 20 + index + ', ' + item.title;
         // item.fn = function() {
         //   console.log(item.id);
@@ -138,18 +142,24 @@ function domMonitor() {
 document.addEventListener('DOMContentLoaded', function() {
   const feedList = document.querySelector('#container');
   let feedScrollerConfig = {
-    tombstoneClassName: 'j_tombstone',
-    scrollRunway: 0,
-    listMarginTop: 1000
+    scrollRunway: 0
   };
-  let feedScroller = new InfiniteScrollerTemp(feedList, new ContentSource(), feedScrollerConfig);
+  window.feedScroller = new InfiniteScrollerTemp(feedList, new ContentSource(), feedScrollerConfig);
 
   domMonitor();
 
   window.addEventListener('scroll', function() {
     statusPanel.addItem('First_of_this_page', feedScroller.firstScreenItemIndex);
   })
-
-  // new InfiniteScrollerTemp(1,1);
-
 });
+
+function test() {
+  console.log('改变第一条高度为200px');
+  let allA = document.querySelector('[data-id="fyreyvz8220508"]');
+  allA.style.height = '200px';
+  feedScroller.resizeContent({
+    itemIndex: 1,
+    newHeight: 200
+  });
+}
+window.test = test;

@@ -3,7 +3,7 @@
  * @Author: zihao5@staff.sina.com.cn 
  * @Date: 2018-02-28 15:06:06 
  * @Last Modified by: zihao5@staff.sina.com.cn
- * @Last Modified time: 2018-02-28 15:06:38
+ * @Last Modified time: 2018-03-01 16:02:51
  */
 class InfiniteScrollerTemp {
   constructor(scroller, source, config) {
@@ -11,13 +11,11 @@ class InfiniteScrollerTemp {
       throw new Error('缺乏必要参数');
     }
     config = config || {};
-    this.listMarginTop = config.listMarginTop || 0;
+    this.listMarginTop = config.listMarginTop || scroller.offsetTop;
     this.runwayItems = config.runwayItems || 10;
     this.runwayItemsOpposite = config.runwayItemsOpposite || 10;
     this.scrollRunway = 0; // TODO: 提前可滑动的距离 目前这种场景下可考虑删除 暂时保留
-    this.animationDurationMs = 0; // TODO: 不采用墓碑元素占位的话 就可以不再考虑替换时候的动画 目前这种场景下可考虑删除 暂时保留
     this.collectBottomDOMFlag = config.collectBottomDOMFlag || true;
-    this.tombstoneClassName = config.tombstoneClassName;
     this._scroller = scroller;
     this._source = source;
     this._init();
@@ -34,10 +32,9 @@ class InfiniteScrollerTemp {
     this.anchorScrollTop = 0;
     this._tombstoneSize = 0;
     this._tombstoneWidth = 0;
-    this._tombstones = [];
     this._items = []; // 所有数据列表
     this._loadedItems = 0;
-    this.requestInProgress_ = false;
+    this._requestInProgress = false;
     this.scrollRunwayEnd_ = 0;
     window.addEventListener('scroll', this._onScroll.bind(this));
     this._onResize();
@@ -83,24 +80,19 @@ class InfiniteScrollerTemp {
         offset: 0
       };
     } else {
-      this.anchorItem = this.calculateAnchoredItem(this.anchorItem, delta);
+      this.anchorItem = this._calculateAnchoredItem(this.anchorItem, delta);
     }
     this.anchorScrollTop = moduleScrollTop;
-    // this.anchorScrollTop = this._scroller.scrollTop;
-    var lastScreenItem = this.calculateAnchoredItem(this.anchorItem, visualArea);
-    // var lastScreenItem = this.calculateAnchoredItem(this.anchorItem, this._scroller.offsetHeight);
-    // this.showCB(this.anchorItem.index, lastScreenItem.index);
+    var lastScreenItem = this._calculateAnchoredItem(this.anchorItem, visualArea);
     this.firstScreenItemIndex = this.anchorItem.index;
     this.lastScreenItemIndex = lastScreenItem.index;
     if (delta < 0) {
-      // 向上滚动 ⬆︎  runway代表滚动方向 当前可视区元素第20个 则需从序号 20-this.runwayItems 处开始补充
-      //  this.runwayItems 底部不可视区补充元素 this.runwayItemsOpposite 顶部不可视区补充元素
+      // 向上滚动 ⬆︎  runway代表滚动方向 当前可视区第一个元素为第20个 则需从序号 20-this.runwayItems 处开始补充
       this.collectBottomDOMFlag = true;
-      this.fill(this.anchorItem.index - this.runwayItems, lastScreenItem.index + this.runwayItemsOpposite);
+      this._fill(this.anchorItem.index - this.runwayItems, lastScreenItem.index + this.runwayItemsOpposite);
     } else {
       // 初始化 或者向下滚动(向底部) ⬇︎
-      // this.runwayItemsOpposite 取值为10 则 0~10个元素 顶部都不需要补充元素
-      this.fill(this.anchorItem.index - this.runwayItemsOpposite, lastScreenItem.index + this.runwayItems);
+      this._fill(this.anchorItem.index - this.runwayItemsOpposite, lastScreenItem.index + this.runwayItems);
     }
   }
 
@@ -113,7 +105,7 @@ class InfiniteScrollerTemp {
    * @return {{index: number, offset: number}} Returns the new item and offset
    *     scroll should be anchored to.
    */
-  calculateAnchoredItem(initialAnchor, delta) {
+  _calculateAnchoredItem(initialAnchor, delta) {
     if (delta == 0)
       return initialAnchor;
     delta += initialAnchor.offset;
@@ -146,53 +138,22 @@ class InfiniteScrollerTemp {
    * @param {number} start The first item which should be attached.
    * @param {number} end One past the last item which should be attached.
    */
-  fill(start, end) {
+  _fill(start, end) {
     this.firstAttachedItemIndex = Math.max(0, start);
     this.lastAttachedItemIndex = end;
-    this.attachContent();
-  }
-
-  /**
-   * Creates or returns an existing tombstone ready to be reused.
-   * @return {Element} A tombstone element ready to be used.
-   */
-  getTombstone() {
-    var tombstone = this._tombstones.pop();
-    if (tombstone) {
-      tombstone.classList.remove('invisible');
-      tombstone.style.opacity = 1;
-      tombstone.style.transform = '';
-      tombstone.style.transition = '';
-      return tombstone;
-    }
-    return this._source.createTombstone();
+    this._attachContent();
   }
 
   /**
    * Create DOM nodes 内部方法
    */
   _chreatDOM(unusedNodesObj, i) {
+    // 需渲染的节点 已有DOM节点 则不处理
     if (this._items[i].node) {
-      // if it's a tombstone but we have data, replace it.
-      if (this._items[i].node.classList.contains(this.tombstoneClassName) &&
-        this._items[i].data) {
-        // TODO: Probably best to move items on top of tombstones and fade them in instead.
-        // 隐藏占位墓碑元素 移动墓碑元素到可复用墓碑元素列表里
-        if (this.animationDurationMs) {
-          this._items[i].node.style.zIndex = 1;
-          tombstoneAnimations[i] = [this._items[i].node, this._items[i].top - this.anchorScrollTop];
-        } else {
-          this._items[i].node.classList.add('invisible');
-          this._tombstones.push(this._items[i].node);
-        }
-        this._items[i].node = null;
-      } else {
-        return
-      }
+      return
     }
 
-    // 当前可视区内节点为 墓碑元素 或者 this._items[i].node 为空（没有渲染过） 执行下面的逻辑
-    // 已经渲染过的话 已从上面的判断中跳过
+    // 需渲染的节点没有对应的DOM 执行渲染逻辑
     // TODO: randomModule key值命名规范  
     var dom = null;
     var templateType = this._items[i].data && this._items[i].data.randomModule;
@@ -200,7 +161,6 @@ class InfiniteScrollerTemp {
       // console.log('可复用');
       dom = unusedNodesObj[templateType].pop();
     }
-    // var node = this._items[i].data ? this._source.render(this._items[i].data, dom) : this.getTombstone();
     var node = this._source.render(this._items[i].data, dom);
     // Maybe don't do this if it's already attached?
     node.style.position = 'absolute';
@@ -214,7 +174,7 @@ class InfiniteScrollerTemp {
    * necessary.
    * @param {string} from 触发attachContent方法的来源 如果是fetch回来的数据 则一次把dom高度全部计算出来
    */
-  attachContent(from) {
+  _attachContent(from) {
     // Collect nodes which will no longer be rendered for reuse.
     // TODO: Limit this based on the change in visible items rather than looping
     // over all items.
@@ -233,32 +193,26 @@ class InfiniteScrollerTemp {
       }
 
       if (this._items[i].node) {
-        if (this._items[i].node.classList.contains(this.tombstoneClassName)) {
-          this._tombstones.push(this._items[i].node);
-          this._tombstones[this._tombstones.length - 1].classList.add('invisible');
+        // 根据模板类型回收
+        var moduleType = this._items[i].data.randomModule;
+        if (Object.prototype.toString.call(unusedNodesObj[moduleType]) === '[object Array]') {
+          unusedNodesObj[moduleType].push(this._items[i].node);
         } else {
-          // add 根据模板类型回收
-          var moduleType = this._items[i].data.randomModule;
-          if (Object.prototype.toString.call(unusedNodesObj[moduleType]) === '[object Array]') {
-            unusedNodesObj[moduleType].push(this._items[i].node);
-          } else {
-            unusedNodesObj[moduleType] = [this._items[i].node];
-          }
-
+          unusedNodesObj[moduleType] = [this._items[i].node];
         }
       }
       // 清理缓存数据里的node节点 只有可视区内 和上下预保留的 有node节点数据
-      // 此处的this._items[]的数量可能比需展示一屏的数量少 在下面的循环里会补充
       this._items[i].node = null;
     }
 
-    var tombstoneAnimations = {};
     // Create DOM nodes.
     // 加载更多来的数据 一次添加完毕
     var endPoint = from === 'fetch' ? this._loadedItems : this.lastAttachedItemIndex;
     for (i = this.firstAttachedItemIndex; i < endPoint; i++) {
-      // this._items中总数据量不超过已加载的数据量
+      // this._items中总数据量不超过已加载的数据量 
       if (i >= this._loadedItems) {
+        // 需要显示的节点index 大于 已有数据 提前终止循环
+        i = endPoint;
         break;
       }
       this._chreatDOM(unusedNodesObj, i);
@@ -310,73 +264,39 @@ class InfiniteScrollerTemp {
       i++;
     }
     // Set up initial positions for animations.
-    for (var i in tombstoneAnimations) {
-      var anim = tombstoneAnimations[i];
-      this._items[i].node.style.transform = 'translateY(' + (this.anchorScrollTop + anim[1]) + 'px) scale(' + (this._tombstoneWidth / this._items[i].width) + ', ' + (this._tombstoneSize / this._items[i].height) + ')';
-      // Call offsetTop on the nodes to be animated to force them to apply current transforms.
-      this._items[i].node.offsetTop;
-      anim[0].offsetTop;
-      this._items[i].node.style.transition = 'transform ' + this.animationDurationMs + 'ms';
-    }
     for (i = this.firstAttachedItemIndex; i < endPoint; i++) {
-      // if (this.lastScreenItemIndex > this._loadedItems - this.runwayItems) {
-      //   console.log('break');
-      //   break;
-      // }
       if (i >= this._loadedItems) {
         i = endPoint;
         break;
       }
-      var anim = tombstoneAnimations[i];
-      if (anim) {
-        anim[0].style.transition = 'transform ' + this.animationDurationMs + 'ms, opacity ' + this.animationDurationMs + 'ms';
-        anim[0].style.transform = 'translateY(' + curPos + 'px) scale(' + (this._items[i].width / this._tombstoneWidth) + ', ' + (this._items[i].height / this._tombstoneSize) + ')';
-        anim[0].style.opacity = 0;
-      }
       if (curPos != this._items[i].top) {
-        if (!anim)
-          this._items[i].node.style.transition = '';
         this._items[i].node.style.transform = 'translateY(' + curPos + 'px)';
       }
       this._items[i].top = curPos;
       curPos += this._items[i].height || this._tombstoneSize;
     }
     this.scrollRunwayEnd_ = Math.max(this.scrollRunwayEnd_, curPos + this.scrollRunway);
-    // this.scrollRunway_.style.transform = 'translate(0, ' + this.scrollRunwayEnd_ + 'px)';
     // this._scroller.scrollTop = this.anchorScrollTop;
     this._scroller.style.height = this.scrollRunwayEnd_ + 'px';
 
-    if (this.animationDurationMs) {
-      // TODO: Should probably use transition end, but there are a lot of animations we could be listening to.
-      setTimeout(function() {
-        for (var i in tombstoneAnimations) {
-          var anim = tombstoneAnimations[i];
-          anim[0].classList.add('invisible');
-          this._tombstones.push(anim[0]);
-          // Tombstone can be recycled now.
-        }
-      }.bind(this), this.animationDurationMs)
-    }
-
-    this.maybeRequestContent();
-
+    this._maybeRequestContent();
   }
 
   /**
    * Requests additional content if we don't have enough currently.
    */
-  maybeRequestContent() {
+  _maybeRequestContent() {
     // Don't issue another request if one is already in progress as we don't
     // know where to start the next request yet.
-    if (this.requestInProgress_)
+    if (this._requestInProgress)
       return;
     var itemsNeeded = this.lastAttachedItemIndex - this._loadedItems;
     if (itemsNeeded <= 0)
       return;
-    this.requestInProgress_ = true;
+    this._requestInProgress = true;
     this._source.fetch(itemsNeeded).then((item) => {
       if (item.length) {
-        this.addContent(item);
+        this._addContent(item);
       }
     });
   }
@@ -384,7 +304,7 @@ class InfiniteScrollerTemp {
   /**
    * Adds an item to the items list.
    */
-  addItem_() {
+  _addItem() {
     this._items.push({
       'data': null,
       'node': null,
@@ -396,19 +316,84 @@ class InfiniteScrollerTemp {
 
   /**
    * Adds the given array of items to the items list and then calls
-   * attachContent to update the displayed content.
+   * _attachContent to update the displayed content.
    * @param {Array<Object>} items The array of items to be added to the infinite
    *     scroller list.
    */
-  addContent(items) {
-    this.requestInProgress_ = false;
+  _addContent(items) {
+    this._requestInProgress = false;
     this.collectBottomDOMFlag = false;
     for (var i = 0; i < items.length; i++) {
       if (this._items.length <= this._loadedItems)
-        this.addItem_();
+        this._addItem();
       this._items[this._loadedItems++].data = items[i];
     }
-    this.attachContent('fetch');
+    this._attachContent('fetch');
+  }
+
+  _updateContentPos(begin, end, delta) {
+    for (let i = begin; i < end; i++) {
+      this._items[i].top = this._items[i].top + delta;
+      if (this._items[i].node) {
+        this._items[i].node.style.transform = 'translateY(' + this._items[i].top + 'px)';
+      }
+    }
+  }
+
+  /**
+   * 更新列表距离顶部的高度
+   * @param {number} listMarginTop 非必须，更新后的列表距离顶端的高度，不传则直接计算
+   */
+  resizeList(listMarginTop) {
+    listMarginTop = parseInt(listMarginTop, 10);
+    if (listMarginTop === listMarginTop) {
+      this.listMarginTop = listMarginTop;
+    } else {
+      this.listMarginTop = this.scroller.offsetTop;
+    }
+  }
+
+  /**
+   * 列表中某一项高度变化
+   * @param {{itemIndex: number, info: {key: string, value: *}, newHeight: number}} changeInfo 
+   * itemIndex 和 info必须有一项存在
+   * itemIndex：变化元素在所有元素中的位置 如提供则优先使用itemIndex
+   * info：找到变化项的必须信息，info.key表示数据源中的键名称，info.value表示数据源中的键值
+   * height：非必须，如提供则使用此值来更新高度，否则找到对应DOM节点计算高度
+   */
+  resizeContent(changeInfo = {}) {
+    let {
+      itemIndex,
+      info = {},
+      newHeight
+    } = changeInfo;
+    if (itemIndex == null && (info.key == null || info.value == null)) {
+      console.warn('resizeContent缺乏必备更新信息');
+      return;
+    }
+
+    if (itemIndex != null) {
+      itemIndex = parseInt(itemIndex, 10);
+    } else {
+      this._items.forEach((item, index) => {
+        if (item.data[info.key] === info.value) {
+          itemIndex = index;
+          return;
+        }
+      })
+    }
+
+    if (!this._items[itemIndex]) {
+      console.warn('resizeContent没有找到对应节点');
+      return
+    }
+
+    let totalItem = this._items.length;
+    if (newHeight) {
+      let delta = newHeight - this._items[itemIndex].height;
+      this._items[itemIndex].height = newHeight;
+      this._updateContentPos(itemIndex + 1, totalItem, delta);
+    }
   }
 }
 
