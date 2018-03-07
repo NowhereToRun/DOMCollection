@@ -1,5 +1,5 @@
 # DOM回收组件  
-
+[Demo](https://nowheretorun.github.io/DOMCollection/dist/demo/)
 ## 使用方法  
 ### 安装组件  
 ```
@@ -20,4 +20,12 @@ let feedListConfig = {
   reusingSelector: 'selector'   // 如果需要DOM重用，则必须提供此选择器，且在获取到的数据节点里第一层必须有对应的字段，用以识别当前回收的DOM类型，以便重用。
 }
 let feedList = new InfiniteScroller(feedList, new ContentSource(), feedListConfig);
-```
+```  
+
+## TODO
+1. 处理已被回收的DOM节点高度变化。
+2. 目前只适配了移动端，横竖屏变化仍有待处理。
+
+## Change log
+#### v0.1.0  
+* init
