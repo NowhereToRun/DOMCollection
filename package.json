@@ -11,7 +11,6 @@
     "postpublish": "node ./node_modules/webpack-marauder/hook/postpublish.js"
   },
   "devDependencies": {
-    "@mfelibs/base-utils": "^1.5.3",
     "webpack-marauder": "^1.6.2"
   },
   "engines": {
