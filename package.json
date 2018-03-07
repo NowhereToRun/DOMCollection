@@ -1,6 +1,6 @@
 {
   "name": "@mfelibs/base-component-infiniteScroll",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "dom回收+无限滚动",
   "main": "src/index.js",
   "module": "src/index.js",
