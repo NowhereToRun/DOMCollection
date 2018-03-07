@@ -1,23 +1,16 @@
-import InfiniteScrollerTemp from '../../index';
+import InfiniteScroller from '../../index';
 import fakeData from './message';
 import '../../css/index.css';
 import Stats from './stats.js'
-
-import {
-  $
-} from '@mfelibs/base-utils'
-import tools from './tools'
-var statusPanel = new tools();
 var totalNum = 0;
 var page = 0;
+var stats = new Stats();
 
 function ContentSource() {
   // Collect template nodes to be cloned when needed.
   this.tombstone_ = document.querySelector(".j_tombstone");
   this.messageTemplate_ = document.querySelector(".j_msg");
   this.messageTemplate2_ = document.querySelector(".j_msg_2");
-  this.nextItem_ = 0;
-  this.noData = 0; // 测试使用  避免多次请求空接口
 }
 
 ContentSource.prototype = {
@@ -44,27 +37,18 @@ ContentSource.prototype = {
         } else {
           item.randomModule = 'type3'
         }
-        // item.randomModule = 'type1'
       })
       page = page + 1;
 
       setTimeout(function() {
         if (page <= 50) {
           totalNum = totalNum + localFakeData.length;
-          statusPanel.addItem('Total_data_number', totalNum);
           resolve(localFakeData);
         } else {
           resolve([]);
         }
       }, 500);
-      // }
-
     }.bind(this));
-  },
-
-  createTombstone: function() {
-    console.log('createTombstone');
-    return this.tombstone_.cloneNode(true);
   },
 
   render: function(item, divObj) {
@@ -118,11 +102,10 @@ function numDomNodes(node) {
 }
 
 function domMonitor() {
-  var stats = new Stats();
   var domPanel = new Stats.Panel('DOM Nodes', '#0ff', '#002');
   stats.addPanel(domPanel);
   stats.showPanel(3);
-  $(domPanel.dom).show(); // ios手机上不显示、临时处理
+  domPanel.dom.style.display = 'block'; // ios手机上不显示、临时处理
   document.body.appendChild(stats.dom);
   var TIMEOUT = 100;
   setTimeout(function timeoutFunc() {
@@ -139,27 +122,48 @@ function domMonitor() {
   }, TIMEOUT);
 }
 
+function totalAndFirstMonitor() {
+  var numberPanel = new Stats.Panel('TotalNum', '#0ff', '#002');
+  stats.addPanel(numberPanel);
+  numberPanel.dom.style.display = 'block';
+
+  var firstPanel = new Stats.Panel('FirstNum', '#0ff', '#002');
+  stats.addPanel(firstPanel);
+  firstPanel.dom.style.display = 'block';
+
+  window.addEventListener('scroll', function() {
+    numberPanel.update(totalNum, 600);
+    firstPanel.update(feedScroller.firstScreenItemIndex, 600);
+    // console.log(feedScroller.firstAttachedItemIndex, feedScroller.lastAttachedItemIndex);
+  })
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   const feedList = document.querySelector('#container');
   let feedScrollerConfig = {
-    scrollRunway: 0
+    reusingSelector: 'randomModule'
   };
-  window.feedScroller = new InfiniteScrollerTemp(feedList, new ContentSource(), feedScrollerConfig);
+  window.feedScroller = new InfiniteScroller(feedList, new ContentSource(), feedScrollerConfig);
 
   domMonitor();
-
-  window.addEventListener('scroll', function() {
-    statusPanel.addItem('First_of_this_page', feedScroller.firstScreenItemIndex);
-  })
+  totalAndFirstMonitor();
 });
 
-function test() {
-  console.log('改变第一条高度为200px');
-  let allA = document.querySelector('[data-id="fyreyvz8220508"]');
-  allA.style.height = '200px';
+function changeSecHeight() {
+  console.log('改变第二条高度为200px');
+  const secA = document.querySelector('[data-id="fyreyvz8220508"]');
+  secA.style.height = '200px';
   feedScroller.resizeContent({
     itemIndex: 1,
     newHeight: 200
   });
 }
-window.test = test;
+
+function changeLishTop() {
+  console.log('改变List距离顶部高度');
+  const topDOM = document.querySelector('#top');
+  topDOM.style.height = '400px';
+  feedScroller.resizeList();
+}
+window.changeSecHeight = changeSecHeight;
+window.changeLishTop = changeLishTop;
