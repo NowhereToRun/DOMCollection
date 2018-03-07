@@ -3,7 +3,7 @@
  * @Author: zihao5@staff.sina.com.cn 
  * @Date: 2018-02-28 15:06:06 
  * @Last Modified by: zihao5@staff.sina.com.cn
- * @Last Modified time: 2018-03-07 15:47:55
+ * @Last Modified time: 2018-03-07 16:00:53
  */
 
 class InfiniteScroller {
@@ -15,7 +15,7 @@ class InfiniteScroller {
     this.listMarginTop = config.listMarginTop || scroller.offsetTop;
     this.runwayItems = config.runwayItems || 10;
     this.runwayItemsOpposite = config.runwayItemsOpposite || 10;
-    this.collectBottomDOMFlag = config.collectBottomDOMFlag || true;
+    this.collectBottomDOMFlag = config.collectBottomDOMFlag || true;    // TODO： 如果需要回收刚加载完成的数据 此处使用有问题，待修复
     this.reusingSelector = config.reusingSelector || '';
     this._scroller = scroller;
     this._source = source;
