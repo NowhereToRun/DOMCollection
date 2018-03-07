@@ -3,9 +3,10 @@
  * @Author: zihao5@staff.sina.com.cn 
  * @Date: 2018-02-28 15:06:06 
  * @Last Modified by: zihao5@staff.sina.com.cn
- * @Last Modified time: 2018-03-01 16:02:51
+ * @Last Modified time: 2018-03-07 15:47:55
  */
-class InfiniteScrollerTemp {
+
+class InfiniteScroller {
   constructor(scroller, source, config) {
     if (!scroller || !source) {
       throw new Error('缺乏必要参数');
@@ -14,8 +15,8 @@ class InfiniteScrollerTemp {
     this.listMarginTop = config.listMarginTop || scroller.offsetTop;
     this.runwayItems = config.runwayItems || 10;
     this.runwayItemsOpposite = config.runwayItemsOpposite || 10;
-    this.scrollRunway = 0; // TODO: 提前可滑动的距离 目前这种场景下可考虑删除 暂时保留
     this.collectBottomDOMFlag = config.collectBottomDOMFlag || true;
+    this.reusingSelector = config.reusingSelector || '';
     this._scroller = scroller;
     this._source = source;
     this._init();
@@ -30,12 +31,11 @@ class InfiniteScrollerTemp {
     this.firstScreenItemIndex = 0;
     this.lastScreenItemIndex = 0;
     this.anchorScrollTop = 0;
-    this._tombstoneSize = 0;
-    this._tombstoneWidth = 0;
+    this._tombstoneSize = 40; // TODO: 处理默认占位高度
     this._items = []; // 所有数据列表
     this._loadedItems = 0;
     this._requestInProgress = false;
-    this.scrollRunwayEnd_ = 0;
+    this._scrollRunwayEnd = 0;
     window.addEventListener('scroll', this._onScroll.bind(this));
     this._onResize();
   }
@@ -44,13 +44,12 @@ class InfiniteScrollerTemp {
     // TODO: If we already have tombstones attached to the document, it would
     // probably be more efficient to use one of them rather than create a new
     // one to measure.
-    var tombstone = this._source.createTombstone();
-    tombstone.style.position = 'absolute';
-    this._scroller.appendChild(tombstone);
-    tombstone.classList.remove('invisible');
-    this._tombstoneSize = tombstone.offsetHeight;
-    this._tombstoneWidth = tombstone.offsetWidth;
-    this._scroller.removeChild(tombstone);
+    // var tombstone = this._source.createTombstone();
+    // tombstone.style.position = 'absolute';
+    // this._scroller.appendChild(tombstone);
+    // tombstone.classList.remove('invisible');
+    // this._tombstoneSize = tombstone.offsetHeight;
+    // this._scroller.removeChild(tombstone);
     // Reset the cached size of items in the scroller as they may no longer be
     // correct after the item content undergoes layout.
     for (var i = 0; i < this._items.length; i++) {
@@ -122,8 +121,10 @@ class InfiniteScrollerTemp {
         delta -= this._items[i].height;
         i++;
       }
-      if (i >= this._items.length || !this._items[i].height)
+      if (i >= this._items.length || !this._items[i].height) {
         tombstones = Math.floor(Math.max(delta, 0) / this._tombstoneSize);
+        // console.log('use _tombstoneSize', i, this._items.length, delta, tombstones);
+      }
     }
     i += tombstones;
     delta -= tombstones * this._tombstoneSize;
@@ -154,12 +155,14 @@ class InfiniteScrollerTemp {
     }
 
     // 需渲染的节点没有对应的DOM 执行渲染逻辑
-    // TODO: randomModule key值命名规范  
     var dom = null;
-    var templateType = this._items[i].data && this._items[i].data.randomModule;
-    if (unusedNodesObj[templateType] && unusedNodesObj[templateType].length) {
-      // console.log('可复用');
-      dom = unusedNodesObj[templateType].pop();
+    if (this.reusingSelector) {
+      // 需要重用节点 则从unusedNodesObj中寻找可复用的节点
+      var templateType = this._items[i].data && this._items[i].data[this.reusingSelector];
+      if (unusedNodesObj[templateType] && unusedNodesObj[templateType].length) {
+        // console.log('可复用');
+        dom = unusedNodesObj[templateType].pop();
+      }
     }
     var node = this._source.render(this._items[i].data, dom);
     // Maybe don't do this if it's already attached?
@@ -179,7 +182,9 @@ class InfiniteScrollerTemp {
     // TODO: Limit this based on the change in visible items rather than looping
     // over all items.
     var i;
-    var unusedNodesObj = {};
+    var unusedNodesObj = {
+      __defaultDOMResuingNodeType: []
+    };
     // 找出需要回收的节点
     for (i = 0; i < this._items.length; i++) {
       // Skip the items which should be visible.
@@ -194,11 +199,17 @@ class InfiniteScrollerTemp {
 
       if (this._items[i].node) {
         // 根据模板类型回收
-        var moduleType = this._items[i].data.randomModule;
-        if (Object.prototype.toString.call(unusedNodesObj[moduleType]) === '[object Array]') {
-          unusedNodesObj[moduleType].push(this._items[i].node);
+        if (this.reusingSelector && this._items[i].data[this.reusingSelector]) {
+          // 如果需要重用
+          var moduleType = this._items[i].data[this.reusingSelector];
+          if (Object.prototype.toString.call(unusedNodesObj[moduleType]) === '[object Array]') {
+            unusedNodesObj[moduleType].push(this._items[i].node);
+          } else {
+            unusedNodesObj[moduleType] = [this._items[i].node];
+          }
         } else {
-          unusedNodesObj[moduleType] = [this._items[i].node];
+          // 不需要重用
+          unusedNodesObj.__defaultDOMResuingNodeType.push(this._items[i].node);
         }
       }
       // 清理缓存数据里的node节点 只有可视区内 和上下预保留的 有node节点数据
@@ -275,9 +286,9 @@ class InfiniteScrollerTemp {
       this._items[i].top = curPos;
       curPos += this._items[i].height || this._tombstoneSize;
     }
-    this.scrollRunwayEnd_ = Math.max(this.scrollRunwayEnd_, curPos + this.scrollRunway);
+    this._scrollRunwayEnd = Math.max(this._scrollRunwayEnd, curPos);
     // this._scroller.scrollTop = this.anchorScrollTop;
-    this._scroller.style.height = this.scrollRunwayEnd_ + 'px';
+    this._scroller.style.height = this._scrollRunwayEnd + 'px';
 
     this._maybeRequestContent();
   }
@@ -349,7 +360,7 @@ class InfiniteScrollerTemp {
     if (listMarginTop === listMarginTop) {
       this.listMarginTop = listMarginTop;
     } else {
-      this.listMarginTop = this.scroller.offsetTop;
+      this.listMarginTop = this._scroller.offsetTop;
     }
   }
 
@@ -360,6 +371,7 @@ class InfiniteScrollerTemp {
    * itemIndex：变化元素在所有元素中的位置 如提供则优先使用itemIndex
    * info：找到变化项的必须信息，info.key表示数据源中的键名称，info.value表示数据源中的键值
    * height：非必须，如提供则使用此值来更新高度，否则找到对应DOM节点计算高度
+   * TODO： 处理这条DOM已经被删除掉的情况
    */
   resizeContent(changeInfo = {}) {
     let {
@@ -397,4 +409,4 @@ class InfiniteScrollerTemp {
   }
 }
 
-export default InfiniteScrollerTemp
+export default InfiniteScroller
