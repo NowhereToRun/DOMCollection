@@ -1,4 +1,4 @@
 /*!
  * @version 0.1.0
- * @date 2018-03-07
+ * @date 2018-03-20
  */#container{margin:0;padding:0;overflow:hidden;width:100%;height:100%;position:relative;-webkit-box-sizing:border-box;box-sizing:border-box;contain:layout;will-change:transform}#templates,.invisible{display:none}.news_list_row{width:100%;background:#f8f8f8}section.outer{background-color:#f8f8f8}.ls_f,section.outer{position:absolute;width:100%}.ls_f{margin:0;padding:.22rem .2rem;background:#f8f8f8}.ls_f_b{padding-left:2.4rem}.ls_f_e_l{left:2.4rem}.m_video_box{width:100%;margin:0;padding:0 .2rem .2rem}

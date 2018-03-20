@@ -3,7 +3,7 @@
  * @Author: zihao5@staff.sina.com.cn 
  * @Date: 2018-02-28 15:06:06 
  * @Last Modified by: zihao5@staff.sina.com.cn
- * @Last Modified time: 2018-03-07 16:00:53
+ * @Last Modified time: 2018-03-20 13:23:51
  */
 
 class InfiniteScroller {
@@ -12,10 +12,10 @@ class InfiniteScroller {
       throw new Error('缺乏必要参数');
     }
     config = config || {};
-    this.listMarginTop = config.listMarginTop || scroller.offsetTop;
+    this.listMarginTop = config.listMarginTop || this.getOffsetTop(scroller);
     this.runwayItems = config.runwayItems || 10;
     this.runwayItemsOpposite = config.runwayItemsOpposite || 10;
-    this.collectBottomDOMFlag = config.collectBottomDOMFlag || true;    // TODO： 如果需要回收刚加载完成的数据 此处使用有问题，待修复
+    this.collectBottomDOMFlag = config.collectBottomDOMFlag || true; // TODO： 如果需要回收刚加载完成的数据 此处使用有问题，待修复
     this.reusingSelector = config.reusingSelector || '';
     this._scroller = scroller;
     this._source = source;
@@ -337,7 +337,10 @@ class InfiniteScroller {
     for (var i = 0; i < items.length; i++) {
       if (this._items.length <= this._loadedItems)
         this._addItem();
-      this._items[this._loadedItems++].data = items[i];
+      var thisIndex = this._loadedItems;
+      this._items[thisIndex].data = items[i];
+      items[i].__InfiniteScrollerIndex = thisIndex;
+      this._loadedItems++;
     }
     this._attachContent('fetch');
   }
@@ -351,6 +354,16 @@ class InfiniteScroller {
     }
   }
 
+  getOffsetTop(elements) {
+    let top = elements.offsetTop;
+    let parent = elements.offsetParent;
+    while (parent != null) {
+      top += parent.offsetTop;
+      parent = parent.offsetParent;
+    };
+    return top;
+  }
+
   /**
    * 更新列表距离顶部的高度
    * @param {number} listMarginTop 非必须，更新后的列表距离顶端的高度，不传则直接计算
@@ -360,7 +373,7 @@ class InfiniteScroller {
     if (listMarginTop === listMarginTop) {
       this.listMarginTop = listMarginTop;
     } else {
-      this.listMarginTop = this._scroller.offsetTop;
+      this.listMarginTop = this.getOffsetTop(this._scroller);
     }
   }
 
