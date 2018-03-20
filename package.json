@@ -1,6 +1,6 @@
 {
   "name": "js-infinite-scroller",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "dom回收+无限滚动",
   "main": "src/index.js",
   "module": "src/index.js",
